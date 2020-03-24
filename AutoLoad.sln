@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.852
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoLoad", "AutoLoad\AutoLoad.csproj", "{723EDF61-06BC-4004-B6E4-2910F51A6838}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Straitjacket.Subnautica.Mods.AutoLoad", "AutoLoad\Straitjacket.Subnautica.Mods.AutoLoad.csproj", "{723EDF61-06BC-4004-B6E4-2910F51A6838}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
