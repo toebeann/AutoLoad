@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Harmony;
 using QModManager.API;
 using UWE;
@@ -11,8 +12,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad.Patch
     {
         static void Postfix(SaveLoadManager __instance)
         {
-            if (!QModServices.Main.GetAllMods().Any(x => !x.IsLoaded))
-            {   // Start loading the save slots immediately, as long as no mods have failed to load.
+            if (AutoLoad.CheckJustLaunched() && !AutoLoad.CheckAnyFailedMods())
+            {
+                // Start loading the save slots immediately, as long as no mods have failed to load.
                 __instance._earlySlotLoading = CoroutineHost.StartCoroutine(__instance.LoadSlotsAsync());
             }
         }

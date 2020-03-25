@@ -1,5 +1,10 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using SMLHelper.V2.Handlers;
+using QModManager.API;
 using UnityEngine;
 using UWE;
 
@@ -7,6 +12,13 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
     internal class AutoLoad
     {
+        public static bool CheckJustLaunched() => SaveLoadManager.main.firstStart == 0;
+
+        public static IEnumerable<IQMod> GetFailedMods() => QModServices.Main.GetAllMods()
+            .Where(x => x.Enable && !x.IsLoaded);
+
+        public static bool CheckAnyFailedMods() => GetFailedMods().Any();
+
         /// <summary>
         /// Copied from uGUI_MainMenu, altered to work statically
         /// </summary>
@@ -31,6 +43,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             }
             if (gameInfo != null)
             {
+                Console.WriteLine("[AutoLoad] Save slot parsed successfully, loading...");
                 CoroutineHost.StartCoroutine(LoadGameAsync(saveGame, gameInfo.changeSet, gameInfo.gameMode));
             }
         }
@@ -81,6 +94,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 uGUI.main.loading.BeginAsyncSceneLoad("Main");
             }
             isStartingNewGame = false;
+            Console.WriteLine("[AutoLoad] Loading complete.");
             yield break;
         }
 
@@ -109,13 +123,18 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         /// <returns></returns>
         public static IEnumerator StartScreen_Load()
         {
+            Console.WriteLine("[AutoLoad] Initialising early load of save slots...");
             yield return SaveLoadManager.main.earlySlotLoading;
+            Console.WriteLine("[AutoLoad] Save slots loaded.");
+            Console.WriteLine("[AutoLoad] Getting active save slots...");
             if (SaveLoadManager.main.GetActiveSlotNames().Length == 0)
             {
+                Console.WriteLine("[AutoLoad] No active save slots found, initialising StartScreen GUI.");
                 StartScreen.OnGuiInitialized();
             }
             else
             {
+                Console.WriteLine("[AutoLoad] Beginning load...");
                 LoadMostRecentSavedGame();
             }
         }
