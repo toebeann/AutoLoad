@@ -9,21 +9,74 @@ using UWE;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
-    internal class AutoLoad
+    internal class AutoLoad : MonoBehaviour
     {
-        public static bool CheckJustLaunched() => SaveLoadManager.main.firstStart == 0;
+        private static AutoLoad main;
+        public static AutoLoad Initialise()
+        {
+            if (!main)
+            {
+                main = new GameObject("AutoLoad").AddComponent<AutoLoad>();
+            }
+            return main;
+        }
+        public static Coroutine RunCoroutine(IEnumerator coroutine) => Initialise().StartCoroutine(coroutine);
+        public static bool Startup { get; private set; } = true;
 
-        public static IEnumerable<IQMod> GetFailedMods() => QModServices.Main.GetAllMods()
-            .Where(x => x.Enable && !x.IsLoaded);
+        public static IEnumerable<IQMod> FailedMods { get; private set; }
+        private static bool modCheckComplete = false;
+        public static void CheckLoadedMods()
+        {
+            FailedMods = QModServices.Main.GetAllMods().Where(mod => mod.Enable && !mod.IsLoaded);
+            modCheckComplete = true;
+        }
 
-        public static bool CheckAnyFailedMods() => GetFailedMods().Any();
+        public static IEnumerator OnGuiInitialized(StartScreen startScreen)
+        {
+            if (Startup)
+            {
+                yield return new WaitUntil(() => modCheckComplete);
+
+                if (!FailedMods.Any())
+                {
+                    yield return new WaitWhile(() => SaveLoadManager.main == null);
+                    yield return SaveLoadManager.main.LoadSlotsAsync();
+
+                    string[] activeSlotNames = SaveLoadManager.main.GetActiveSlotNames();
+                    if (!activeSlotNames.Any())
+                    {
+                        Console.WriteLine("[AutoLoad] No active save slots found, initialising StartScreen GUI.");
+                        yield return RunCoroutine(startScreen.Load());
+                    }
+                    else
+                    {
+                        Console.WriteLine("[AutoLoad] Beginning load...");
+                        LoadMostRecentSavedGame(activeSlotNames);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[AutoLoad] Detected the following mods were not loaded:");
+                    foreach (var mod in FailedMods)
+                    {
+                        Console.WriteLine($"[AutoLoad]     {mod.DisplayName}");
+                    }
+                    Console.WriteLine("[AutoLoad] Skipping AutoLoad.");
+                    yield return RunCoroutine(startScreen.Load());
+                }
+                Startup = false;
+            }
+            else
+            {
+                yield return RunCoroutine(startScreen.Load());
+            }
+        }
 
         /// <summary>
         /// Copied from uGUI_MainMenu, altered to work statically
         /// </summary>
-        public static void LoadMostRecentSavedGame()
+        public static void LoadMostRecentSavedGame(string[] activeSlotNames)
         {
-            string[] activeSlotNames = SaveLoadManager.main.GetActiveSlotNames();
             long num = 0L;
             SaveLoadManager.GameInfo gameInfo = null;
             string saveGame = string.Empty;
@@ -42,8 +95,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             }
             if (gameInfo != null)
             {
-                Console.WriteLine("[AutoLoad] Save slot parsed successfully, loading...");
-                CoroutineHost.StartCoroutine(LoadGameAsync(saveGame, gameInfo.changeSet, gameInfo.gameMode));
+                RunCoroutine(LoadGameAsync(saveGame, gameInfo.changeSet, gameInfo.gameMode));
             }
         }
 
@@ -108,34 +160,10 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         {
             if (confirmed)
             {
-                CoroutineHost.StartCoroutine(LoadGameAsync(saveGame, changeSet, gameMode));
+                RunCoroutine(LoadGameAsync(saveGame, changeSet, gameMode));
                 return;
             }
             FPSInputModule.SelectGroup(null, false);
-        }
-
-        public static StartScreen StartScreen;
-        /// <summary>
-        /// Extremely trimmed down version of StartScreen.Load(). Waits for the active save slots to be loaded
-        /// and parsed, then loads the most recent save. If there are no saves, falls back to the original.
-        /// </summary>
-        /// <returns></returns>
-        public static IEnumerator StartScreen_Load()
-        {
-            Console.WriteLine("[AutoLoad] Initialising early load of save slots...");
-            yield return SaveLoadManager.main.earlySlotLoading;
-            Console.WriteLine("[AutoLoad] Save slots loaded.");
-            Console.WriteLine("[AutoLoad] Getting active save slots...");
-            if (SaveLoadManager.main.GetActiveSlotNames().Length == 0)
-            {
-                Console.WriteLine("[AutoLoad] No active save slots found, initialising StartScreen GUI.");
-                StartScreen.OnGuiInitialized();
-            }
-            else
-            {
-                Console.WriteLine("[AutoLoad] Beginning load...");
-                LoadMostRecentSavedGame();
-            }
         }
     }
 }

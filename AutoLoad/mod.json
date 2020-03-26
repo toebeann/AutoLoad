@@ -2,9 +2,8 @@
     "Id": "Straitjacket.Subnautica.Mods.AutoLoad",
     "DisplayName": "AutoLoad",
     "Author": "Tobey Blaber",
-    "Version": "1.0.1",
+    "Version": "1.0.2",
     "AssemblyName": "Straitjacket.Subnautica.Mods.AutoLoad.dll",
-    "EntryMethod": "Straitjacket.Subnautica.Mods.AutoLoad.HarmonyPatcher.ApplyPatches",
     "Enable": true,
     "Game": "Subnautica"
 }

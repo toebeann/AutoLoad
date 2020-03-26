@@ -73,7 +73,6 @@
   <ItemGroup>
     <Compile Include="AutoLoad.cs" />
     <Compile Include="HarmonyPatcher.cs" />
-    <Compile Include="Patch\SaveLoadManager.cs" />
     <Compile Include="Patch\StartScreen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
