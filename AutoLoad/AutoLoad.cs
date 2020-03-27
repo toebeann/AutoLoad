@@ -3,16 +3,18 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using SMLHelper.V2.Handlers;
+using Straitjacket.Subnautica.Mods.AutoLoad.SMLHelper.V2.Options;
+using Straitjacket.Subnautica.Mods.AutoLoad.SMLHelper.V2.Utility;
 using QModManager.API;
 using UnityEngine;
-using UWE;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
     internal class AutoLoad : MonoBehaviour
     {
         private static AutoLoad main;
-        public static AutoLoad Initialise()
+        public static AutoLoad Singleton()
         {
             if (!main)
             {
@@ -20,7 +22,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             }
             return main;
         }
-        public static Coroutine RunCoroutine(IEnumerator coroutine) => Initialise().StartCoroutine(coroutine);
+        public static Coroutine RunCoroutine(IEnumerator coroutine) => Singleton().StartCoroutine(coroutine);
         public static bool Startup { get; private set; } = true;
 
         public static IEnumerable<IQMod> FailedMods { get; private set; }
@@ -33,17 +35,21 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
         public static IEnumerator OnGuiInitialized(StartScreen startScreen)
         {
-            if (Startup)
+            if (Startup && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
             {
                 yield return new WaitUntil(() => modCheckComplete);
 
-                if (!FailedMods.Any())
+                if (!FailedMods.Any() && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
                 {
                     yield return new WaitWhile(() => SaveLoadManager.main == null);
                     yield return SaveLoadManager.main.LoadSlotsAsync();
 
                     string[] activeSlotNames = SaveLoadManager.main.GetActiveSlotNames();
-                    if (!activeSlotNames.Any())
+                    if (KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
+                    {
+                        yield return RunCoroutine(startScreen.Load());
+                    }
+                    else if (!activeSlotNames.Any())
                     {
                         Console.WriteLine("[AutoLoad] No active save slots found, initialising StartScreen GUI.");
                         yield return RunCoroutine(startScreen.Load());
@@ -54,7 +60,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                         LoadMostRecentSavedGame(activeSlotNames);
                     }
                 }
-                else
+                else if (!KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
                 {
                     Console.WriteLine("[AutoLoad] Detected the following mods were not loaded:");
                     foreach (var mod in FailedMods)
@@ -64,12 +70,16 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     Console.WriteLine("[AutoLoad] Skipping AutoLoad.");
                     yield return RunCoroutine(startScreen.Load());
                 }
-                Startup = false;
+                else
+                {
+                    yield return RunCoroutine(startScreen.Load());
+                }
             }
             else
             {
                 yield return RunCoroutine(startScreen.Load());
             }
+            Startup = false;
         }
 
         /// <summary>
@@ -164,6 +174,12 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 return;
             }
             FPSInputModule.SelectGroup(null, false);
+        }
+
+        public static Config Config = ModConfig.Load<Config>();
+        public static void Initialise()
+        {
+            OptionsPanelHandler.RegisterModOptions(new Options());
         }
     }
 }

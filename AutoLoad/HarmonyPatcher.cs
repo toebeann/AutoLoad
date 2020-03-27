@@ -13,6 +13,8 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         {
             var harmony = HarmonyInstance.Create("com.tobeyblaber.straitjacket.subnautica.autoload.mod");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            AutoLoad.Initialise();
         }
 
         [QModPostPatch("B51B2A74117249DFF775B52A07FBDF72")]

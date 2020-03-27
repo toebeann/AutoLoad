@@ -6,5 +6,8 @@
     "AssemblyName": "Straitjacket.Subnautica.Mods.AutoLoad.dll",
     "Enable": true,
     "Game": "Subnautica",
-    "LoadAfter": [ "SMLHelper" ]
+    "LoadAfter": [ "SMLHelper" ],
+    "VersionDependencies": {
+        "SMLHelper": "2.6.1"
+    }
 }
