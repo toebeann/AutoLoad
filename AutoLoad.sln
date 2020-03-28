@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.852
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29920.165
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Straitjacket.Subnautica.Mods.AutoLoad", "AutoLoad\Straitjacket.Subnautica.Mods.AutoLoad.csproj", "{723EDF61-06BC-4004-B6E4-2910F51A6838}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SMLHelper", "..\..\..\SMLHelper\SMLHelper\SMLHelper.shproj", "{8BE2EE17-2FAD-4E56-BF48-F9DEF4880348}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\..\SMLHelper\SMLHelper\SMLHelper.projitems*{723edf61-06bc-4004-b6e4-2910f51a6838}*SharedItemsImports = 4
+		..\..\..\SMLHelper\SMLHelper\SMLHelper.projitems*{8be2ee17-2fad-4e56-bf48-f9def4880348}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
