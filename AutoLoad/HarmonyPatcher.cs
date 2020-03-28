@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Harmony;
 using QModManager.API.ModLoading;
-using UnityEngine;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
