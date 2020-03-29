@@ -34,8 +34,10 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             modCheckComplete = true;
         }
 
+        private static StartScreen StartScreen;
         public static IEnumerator OnGuiInitialized(StartScreen startScreen)
         {
+            StartScreen = startScreen;
 #pragma warning disable CS0436 // Type conflicts with imported type
             if (Startup && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
 #pragma warning restore CS0436 // Type conflicts with imported type
@@ -166,7 +168,8 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
         private static bool isStartingNewGame = false;
         /// <summary>
-        /// Copied from <see cref="uGUI_MainMenu"/>, altered to work statically
+        /// Copied from <see cref="uGUI_MainMenu"/>, altered to work statically, with portions copied from
+        /// <see cref="StartScreen.Load"/> to handle loading user preferences.
         /// </summary>
         /// <param name="saveGame"></param>
         /// <param name="changeSet"></param>
@@ -180,6 +183,32 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             {
                 yield break;
             }
+
+            var userStorage = PlatformUtils.main.GetUserStorage();
+            var initTask = userStorage.InitializeAsync();
+            yield return initTask;
+
+            if (!initTask.GetSuccessful())
+            {
+                Console.WriteLine("[AutoLoad] Save data init failed ({0})", new object[]
+                {
+                    initTask.result
+                });
+                yield return RunCoroutine(StartScreen.Load());
+                yield break;
+            }
+
+            var loadOptionsTask = GameSettings.LoadAsync();
+            yield return loadOptionsTask;
+
+            if (!loadOptionsTask.GetResult())
+            {
+                string descriptionText = Language.main.Get("LoadOptionsFailed");
+                Console.WriteLine("[AutoLoad] " + descriptionText);
+                yield return RunCoroutine(StartScreen.Load());
+                yield break;
+            }
+
             isStartingNewGame = true;
             FPSInputModule.SelectGroup(null, false);
             uGUI.main.loading.ShowLoadingScreen();
