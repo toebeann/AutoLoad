@@ -30,7 +30,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     AutoLoad.Config.AutoLoadMode = (AutoLoadMode)e.Index;
                     break;
             }
-            JsonUtils.Save(AutoLoad.Config);
+            AutoLoad.Config.Save();
         }
 
         private void Options_KeybindChanged(object sender, KeybindChangedEventArgs e)
@@ -44,7 +44,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     AutoLoad.Config.ToggleAutoLoadModeKey = e.Key;
                     break;
             }
-            JsonUtils.Save(AutoLoad.Config);
+            AutoLoad.Config.Save();
         }
     }
 }
