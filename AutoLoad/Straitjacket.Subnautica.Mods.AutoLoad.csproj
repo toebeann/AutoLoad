@@ -12,7 +12,8 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -84,8 +85,10 @@
     <Compile Include="HarmonyPatcher.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Patch\Player.cs" />
+    <Compile Include="Patch\SaveLoadManager.cs" />
     <Compile Include="Patch\StartScreen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SaveSlotInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

@@ -3,6 +3,8 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Oculus.Newtonsoft.Json;
+using Oculus.Newtonsoft.Json.Converters;
 using SMLHelper.V2.Handlers;
 using SMLHelper.V2.Utility;
 using QModManager.API;
@@ -11,6 +13,7 @@ using UnityEngine;
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
     internal enum AutoLoadMode { MostRecentlySaved, MostRecentlyLoaded }
+    internal enum AutoLoadPause { Off, AutoLoadOnly, All }
 
     internal class AutoLoad : MonoBehaviour
     {
@@ -68,7 +71,10 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                         if ((activeSlotNames as IEnumerable<string>).Contains(Config.SpecificSaveSlot))
                         {
                             Console.WriteLine($"[AutoLoad] Beginning load of specific save [{Config.SpecificSaveSlot}]...");
-                            LoadSpecificSaveGame(Config.SpecificSaveSlot);
+                            if (!LoadSpecificSaveGame(Config.SpecificSaveSlot))
+                            {
+                                yield return RunCoroutine(startScreen.Load());
+                            }
                         }
                         else
                         {
@@ -86,12 +92,27 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                             || (toggleAutoLoadMode && Config.AutoLoadMode == AutoLoadMode.MostRecentlyLoaded))
                         {
                             Console.WriteLine("[AutoLoad] Beginning load of most recent save...");
-                            LoadMostRecentSavedGame(activeSlotNames);
+                            if (!LoadMostRecentSavedGame(activeSlotNames))
+                            {
+                                yield return RunCoroutine(startScreen.Load());
+                            }
                         }
                         else if (MostRecentlyLoadedSlot != null)
                         {
-                            Console.WriteLine("[AutoLoad] Beginning load of most recent load...");
-                            LoadMostRecentLoadedGame();
+                            Console.WriteLine("[AutoLoad] Beginning load of most recently loaded game...");
+                            if (!LoadMostRecentLoadedGame())
+                            {
+                                if (Config.StartNewGame)
+                                {
+                                    Console.WriteLine($"[AutoLoad] Starting new game in {MostRecentlyLoadedSlot.GameMode} mode...");
+                                    yield return RunCoroutine(StartNewGame(MostRecentlyLoadedSlot.GameMode));
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[AutoLoad] Initialising StartScreen GUI.");
+                                    yield return RunCoroutine(startScreen.Load());
+                                }
+                            }
                         }
                         else
                         {
@@ -125,10 +146,69 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             Startup = false;
         }
 
+        public static IEnumerator StartNewGame(GameMode gameMode)
+        {
+            if (isStartingNewGame)
+            {
+                yield break;
+            }
+
+            yield return LoadUserSettings();
+
+            isStartingNewGame = true;
+            isAutoLoad = true;
+            Guid.NewGuid().ToString();
+            PlatformUtils.main.GetServices().ShowUGCRestrictionMessageIfNecessary();
+            global::Utils.SetContinueMode(false);
+            global::Utils.SetLegacyGameMode(gameMode);
+            CoroutineTask<SaveLoadManager.CreateResult> createSlotTask = null;
+            if (PlatformUtils.isPS4Platform)
+            {
+                createSlotTask = SaveLoadManager.main.SetupSlotPS4Async();
+            }
+            else
+            {
+                createSlotTask = SaveLoadManager.main.CreateSlotAsync();
+            }
+            yield return createSlotTask;
+            SaveLoadManager.CreateResult result = createSlotTask.GetResult();
+            if (!result.success)
+            {
+                yield return RunCoroutine(StartScreen.Load());
+                if (result.slotName == SaveLoadManager.Error.OutOfSpace.ToString())
+                {
+                    string descriptionText = Language.main.Get("SaveFailedSpace");
+                    uGUI.main.confirmation.Show(descriptionText, null);
+                }
+                else if (result.slotName == SaveLoadManager.Error.OutOfSlots.ToString())
+                {
+                    string descriptionText2 = Language.main.Get("SaveFailedSlot");
+                    uGUI.main.confirmation.Show(descriptionText2, null);
+                }
+                isStartingNewGame = false;
+                isAutoLoad = false;
+                yield break;
+            }
+            SaveLoadManager.main.SetCurrentSlot(result.slotName);
+            VRLoadingOverlay.Show();
+            if (!PlatformUtils.isPS4Platform)
+            {
+                UserStorageUtils.AsyncOperation clearSlotTask = SaveLoadManager.main.ClearSlotAsync(result.slotName);
+                yield return clearSlotTask;
+                if (!clearSlotTask.GetSuccessful())
+                {
+                    Debug.LogError("Clearing save data failed. But we ignore it.");
+                }
+                clearSlotTask = null;
+            }
+            GamepadInputModule.current.SetCurrentGrid(null);
+            uGUI.main.loading.BeginAsyncSceneLoad("Main");
+        }
+
         /// <summary>
         /// Copied from <see cref="uGUI_MainMenu"/>, altered to work statically
         /// </summary>
-        public static void LoadMostRecentSavedGame(string[] activeSlotNames)
+        public static bool LoadMostRecentSavedGame(string[] activeSlotNames)
         {
             long num = 0L;
             SaveLoadManager.GameInfo gameInfo = null;
@@ -146,44 +226,39 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 }
                 i++;
             }
+
             if (gameInfo != null)
             {
                 RunCoroutine(LoadGameAsync(saveGame, gameInfo.changeSet, gameInfo.gameMode));
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
         /// Adapted from <see cref="LoadMostRecentSavedGame(string[])"/>.
         /// </summary>
-        public static void LoadSpecificSaveGame(string saveGame)
+        public static bool LoadSpecificSaveGame(string saveGame, string sessionId = null)
         {
+            Console.WriteLine($"[AutoLoad] Attempting to load save slot {saveGame}...");
             var gameInfo = SaveLoadManager.main.GetGameInfo(saveGame);
-            if (gameInfo != null)
+            if (gameInfo != null && SlotIsValid(saveGame, sessionId))
             {
                 RunCoroutine(LoadGameAsync(saveGame, gameInfo.changeSet, gameInfo.gameMode));
+                return true;
+            }
+            else
+            {
+                Console.WriteLine($"[AutoLoad] Specified save slot does not exist or is not valid.");
+                return false;
             }
         }
 
-        public static void LoadMostRecentLoadedGame() => LoadSpecificSaveGame(MostRecentlyLoadedSlot);
+        public static bool LoadMostRecentLoadedGame() => LoadSpecificSaveGame(MostRecentlyLoadedSlot.SaveGame, MostRecentlyLoadedSlot.Session);
 
-        private static bool isStartingNewGame = false;
-        /// <summary>
-        /// Copied from <see cref="uGUI_MainMenu"/>, altered to work statically, with portions copied from
-        /// <see cref="StartScreen.Load"/> to handle loading user preferences.
-        /// </summary>
-        /// <param name="saveGame"></param>
-        /// <param name="changeSet"></param>
-        /// <param name="gameMode"></param>
-        /// <returns></returns>
-#pragma warning disable CS0618 // Type or member is obsolete
-        public static IEnumerator LoadGameAsync(string saveGame, int changeSet, GameMode gameMode)
-#pragma warning restore CS0618 // Type or member is obsolete
+        public static IEnumerator LoadUserSettings()
         {
-            if (isStartingNewGame)
-            {
-                yield break;
-            }
-
             var userStorage = PlatformUtils.main.GetUserStorage();
             var initTask = userStorage.InitializeAsync();
             yield return initTask;
@@ -208,8 +283,30 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 yield return RunCoroutine(StartScreen.Load());
                 yield break;
             }
+        }
+
+        private static bool isStartingNewGame = false;
+        /// <summary>
+        /// Copied from <see cref="uGUI_MainMenu"/>, altered to work statically, with portions copied from
+        /// <see cref="StartScreen.Load"/> to handle loading user preferences.
+        /// </summary>
+        /// <param name="saveGame"></param>
+        /// <param name="changeSet"></param>
+        /// <param name="gameMode"></param>
+        /// <returns></returns>
+#pragma warning disable CS0618 // Type or member is obsolete
+        public static IEnumerator LoadGameAsync(string saveGame, int changeSet, GameMode gameMode)
+#pragma warning restore CS0618 // Type or member is obsolete
+        {
+            if (isStartingNewGame)
+            {
+                yield break;
+            }
+
+            yield return LoadUserSettings();
 
             isStartingNewGame = true;
+            isAutoLoad = true;
             FPSInputModule.SelectGroup(null, false);
             uGUI.main.loading.ShowLoadingScreen();
             yield return BatchUpgrade.UpgradeBatches(saveGame, changeSet);
@@ -224,6 +321,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             {
                 yield return new WaitForSecondsRealtime(1f);
                 isStartingNewGame = false;
+                isAutoLoad = false;
                 uGUI.main.loading.End(false);
                 string descriptionText = Language.main.GetFormat<string>("LoadFailed", result.errorMessage);
                 if (result.error == SaveLoadManager.Error.OutOfSpace)
@@ -239,9 +337,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             {
                 FPSInputModule.SelectGroup(null, false);
                 uGUI.main.loading.BeginAsyncSceneLoad("Main");
+                Console.WriteLine("[AutoLoad] Loading complete.");
             }
             isStartingNewGame = false;
-            Console.WriteLine("[AutoLoad] Loading complete.");
             yield break;
         }
 
@@ -264,10 +362,76 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             FPSInputModule.SelectGroup(null, false);
         }
 
-        internal static string MostRecentlyLoadedSlot
+        private static bool SlotIsValid(string saveSlot, string sessionId = null)
         {
-            get => PlayerPrefs.GetString("MostRecentlyLoaded", null);
-            set => PlayerPrefs.SetString("MostRecentlyLoaded", value);
+            if ((SaveLoadManager.main.GetActiveSlotNames() as IEnumerable<string>).Contains(saveSlot))
+            {
+                var gameInfo = SaveLoadManager.main.GetGameInfo(saveSlot);
+                if (gameInfo != null)
+                {
+                    if (sessionId != null)
+                    {
+                        var result = gameInfo.session == sessionId;
+                        if (!result)
+                        {
+                            Console.WriteLine("[AutoLoad] Session ID mismatch.");
+                        }
+                        return result;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static bool isAutoLoad = false;
+        public static IEnumerator PauseOnLoad()
+        {
+            if (Config.PauseOnLoad != AutoLoadPause.Off)
+            {
+                if (Config.PauseOnLoad == AutoLoadPause.All || isAutoLoad)
+                {
+                    yield return new WaitUntil(() => IngameMenu.main != null);
+                    yield return new WaitUntil(() => Time.timeSinceLevelLoad >= 1f);
+
+                    if (Utils.GetLegacyGameMode() != GameMode.Hardcore)
+                    {
+                        IngameMenu.main.Open();
+                    }
+                    isAutoLoad = false;
+                }
+                else
+                {
+                    isAutoLoad = false;
+                }
+            }
+        }
+
+        public static SaveSlotInfo MostRecentlyLoadedSlot
+        {
+            get
+            {
+                var saveSlotInfoString = PlayerPrefs.GetString("MostRecentlyLoadedSaveSlot", null);
+                if (saveSlotInfoString != null)
+                {
+                    try
+                    {
+                        return JsonConvert.DeserializeObject<SaveSlotInfo>(saveSlotInfoString, new JsonConverter[] { new StringEnumConverter() });
+                    }
+                    catch (Exception)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            set => PlayerPrefs.SetString("MostRecentlyLoadedSaveSlot", JsonConvert.SerializeObject(value, new JsonConverter[] { new StringEnumConverter() }));
         }
         public static Config Config = new Config();
         public static void Initialise()
