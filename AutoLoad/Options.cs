@@ -7,7 +7,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
     {
         public override void BuildModOptions()
         {
-            AddChoiceOption("pauseOnLoad", "Pause after AutoLoad", new string[] { "Off", "AutoLoad only", "All" },
+            AddChoiceOption("pauseOnLoad", "Pause after AutoLoad", new string[] { "Off", "AutoLoaded saves only", "All saves" },
                 (int)AutoLoad.Config.PauseOnLoad);
             AddChoiceOption("mode", "AutoLoad mode", new string[] { "Most recently saved", "Most recently loaded" },
                 (int)AutoLoad.Config.AutoLoadMode);
