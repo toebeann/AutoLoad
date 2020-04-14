@@ -6,10 +6,12 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
     internal class Config : ConfigFile
     {
+        public bool PauseOnLoad { get; set; } = false;
         public KeyCode OverrideKey { get; set; } = KeyCode.Escape;
         public AutoLoadMode AutoLoadMode { get; set; } = AutoLoadMode.MostRecentlySaved;
         public KeyCode ToggleAutoLoadModeKey { get; set; } = KeyCode.LeftControl;
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string SpecificSaveSlot { get; set; } = null;
+        public bool StartNewGame { get; set; } = true;
     }
 }
