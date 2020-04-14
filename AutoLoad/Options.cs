@@ -7,7 +7,8 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
     {
         public override void BuildModOptions()
         {
-            AddToggleOption("pauseOnLoad", "Pause after AutoLoad", AutoLoad.Config.PauseOnLoad);
+            AddChoiceOption("pauseOnLoad", "Pause after AutoLoad", new string[] { "Off", "AutoLoad only", "All" },
+                (int)AutoLoad.Config.PauseOnLoad);
             AddChoiceOption("mode", "AutoLoad mode", new string[] { "Most recently saved", "Most recently loaded" },
                 (int)AutoLoad.Config.AutoLoadMode);
             AddKeybindOption("overrideKey", "Skip AutoLoad on launch",
@@ -19,23 +20,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
         public Options() : base("AutoLoad")
         {
-            ToggleChanged += Options_ToggleChanged;
             ChoiceChanged += Options_ChoiceChanged;
             KeybindChanged += Options_KeybindChanged;
-        }
-
-        private void Options_ToggleChanged(object sender, ToggleChangedEventArgs e)
-        {
-            switch (e.Id)
-            {
-                case "pauseOnLoad":
-                    AutoLoad.Config.PauseOnLoad = e.Value;
-                    break;
-                case "startNewGame":
-                    AutoLoad.Config.StartNewGame = e.Value;
-                    break;
-            }
-            AutoLoad.Config.Save();
+            ToggleChanged += Options_ToggleChanged;
         }
 
         private void Options_ChoiceChanged(object sender, ChoiceChangedEventArgs e)
@@ -43,6 +30,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
             switch (e.Id)
             {
+                case "pauseOnLoad":
+                    AutoLoad.Config.PauseOnLoad = (AutoLoadPause)e.Index;
+                    break;
                 case "mode":
                     AutoLoad.Config.AutoLoadMode = (AutoLoadMode)e.Index;
                     break;
@@ -59,6 +49,17 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     break;
                 case "overrideModeKey":
                     AutoLoad.Config.ToggleAutoLoadModeKey = e.Key;
+                    break;
+            }
+            AutoLoad.Config.Save();
+        }
+
+        private void Options_ToggleChanged(object sender, ToggleChangedEventArgs e)
+        {
+            switch (e.Id)
+            {
+                case "startNewGame":
+                    AutoLoad.Config.StartNewGame = e.Value;
                     break;
             }
             AutoLoad.Config.Save();
