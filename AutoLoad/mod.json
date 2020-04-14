@@ -2,7 +2,7 @@
     "Id": "Straitjacket.Subnautica.Mods.AutoLoad",
     "DisplayName": "AutoLoad",
     "Author": "Tobey Blaber",
-    "Version": "1.1.3",
+    "Version": "1.2.0",
     "AssemblyName": "Straitjacket.Subnautica.Mods.AutoLoad.dll",
     "Enable": true,
     "Game": "Subnautica",
