@@ -1,5 +1,4 @@
 ﻿using SMLHelper.V2.Options;
-using SMLHelper.V2.Utility;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
