@@ -13,6 +13,7 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		..\..\..\VirtualKey\VirtualKey\VirtualKey.projitems*{6feabc43-6a6e-421e-b90c-fae883f48a50}*SharedItemsImports = 13
 		..\..\..\SMLHelper\SMLHelper\SMLHelper.projitems*{723edf61-06bc-4004-b6e4-2910f51a6838}*SharedItemsImports = 4
+		..\..\..\VirtualKey\VirtualKey\VirtualKey.projitems*{723edf61-06bc-4004-b6e4-2910f51a6838}*SharedItemsImports = 4
 		..\..\..\SMLHelper\SMLHelper\SMLHelper.projitems*{8be2ee17-2fad-4e56-bf48-f9def4880348}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

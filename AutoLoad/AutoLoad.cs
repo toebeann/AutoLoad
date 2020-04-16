@@ -42,13 +42,13 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         {
             StartScreen = startScreen;
 #pragma warning disable CS0436 // Type conflicts with imported type
-            if (Startup && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
+            if (Startup && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
 #pragma warning restore CS0436 // Type conflicts with imported type
             {
                 yield return new WaitUntil(() => modCheckComplete);
 
 #pragma warning disable CS0436 // Type conflicts with imported type
-                if (!FailedMods.Any() && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
+                if (!FailedMods.Any() && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
 #pragma warning restore CS0436 // Type conflicts with imported type
                 {
                     yield return new WaitWhile(() => SaveLoadManager.main == null);
@@ -56,7 +56,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
                     string[] activeSlotNames = SaveLoadManager.main.GetActiveSlotNames();
 #pragma warning disable CS0436 // Type conflicts with imported type
-                    if (KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
+                    if (KeyCodeUtils.GetKeyHeld(Config.OverrideKey) || VirtualKey.GetKey(Config.OverrideKey))
 #pragma warning restore CS0436 // Type conflicts with imported type
                     {
                         yield return RunCoroutine(startScreen.Load());
@@ -86,7 +86,8 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     else
                     {
 #pragma warning disable CS0436 // Type conflicts with imported type
-                        var toggleAutoLoadMode = KeyCodeUtils.GetKeyHeld(Config.ToggleAutoLoadModeKey);
+                        var toggleAutoLoadMode = KeyCodeUtils.GetKeyHeld(Config.ToggleAutoLoadModeKey) ||
+                            VirtualKey.GetKey(Config.ToggleAutoLoadModeKey);
 #pragma warning restore CS0436 // Type conflicts with imported type
                         if ((!toggleAutoLoadMode && Config.AutoLoadMode == AutoLoadMode.MostRecentlySaved)
                             || (toggleAutoLoadMode && Config.AutoLoadMode == AutoLoadMode.MostRecentlyLoaded))
@@ -123,7 +124,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     }
                 }
 #pragma warning disable CS0436 // Type conflicts with imported type
-                else if (!KeyCodeUtils.GetKeyHeld(Config.OverrideKey))
+                else if (!KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
 #pragma warning restore CS0436 // Type conflicts with imported type
                 {
                     Console.WriteLine("[AutoLoad] Detected the following mods were not loaded:");
