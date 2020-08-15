@@ -1,0 +1,3 @@
+[submodule "VirtualKey"]
+	path = VirtualKey
+	url = https://github.com/tobeyStraitjacket/Straitjacket.VirtualKey

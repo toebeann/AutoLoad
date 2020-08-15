@@ -1,4 +1,4 @@
-﻿using Harmony;
+﻿using HarmonyLib;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad.Patch
 {

@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Harmony;
+﻿using HarmonyLib;
 using QModManager.API.ModLoading;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
@@ -10,9 +9,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         [QModPatch]
         public static void ApplyPatches()
         {
-            var harmony = HarmonyInstance.Create("com.tobeyblaber.straitjacket.subnautica.autoload.mod");
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-
+            new Harmony("com.tobeyblaber.straitjacket.subnautica.autoload.mod").PatchAll();
             AutoLoad.Initialise();
         }
 
