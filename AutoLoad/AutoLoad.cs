@@ -1,18 +1,18 @@
-﻿using System;
+﻿using HarmonyLib;
+using Oculus.Newtonsoft.Json;
+using Oculus.Newtonsoft.Json.Converters;
+using QModManager.API;
+using SMLHelper.V2.Handlers;
+using SMLHelper.V2.Utility;
+using Straitjacket.Subnautica.Mods.AutoLoad.Patches;
+using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using Oculus.Newtonsoft.Json;
-using Oculus.Newtonsoft.Json.Converters;
-using SMLHelper.V2.Handlers;
-using SMLHelper.V2.Utility;
-using QModManager.API;
 using UnityEngine;
 using Logger = BepInEx.Subnautica.Logger;
-using HarmonyLib;
-using Straitjacket.Subnautica.Mods.AutoLoad.Patches;
-using System.Diagnostics;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
