@@ -1,13 +1,16 @@
-﻿using System;
+﻿using HarmonyLib;
+using Oculus.Newtonsoft.Json;
+using Oculus.Newtonsoft.Json.Converters;
+using QModManager.API;
+using SMLHelper.V2.Handlers;
+using SMLHelper.V2.Utility;
+using Straitjacket.Subnautica.Mods.AutoLoad.Patches;
+using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using Oculus.Newtonsoft.Json;
-using Oculus.Newtonsoft.Json.Converters;
-using SMLHelper.V2.Handlers;
-using SMLHelper.V2.Utility;
-using QModManager.API;
 using UnityEngine;
 using Logger = BepInEx.Subnautica.Logger;
 
@@ -199,7 +202,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 yield return clearSlotTask;
                 if (!clearSlotTask.GetSuccessful())
                 {
-                    Debug.LogError("Clearing save data failed. But we ignore it.");
+                    Logger.LogError("Clearing save data failed. But we ignore it.");
                 }
                 clearSlotTask = null;
             }
@@ -434,8 +437,28 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         public static Config Config = new Config();
         public static void Initialise()
         {
+            Logger.LogInfo("Initialising...");
+            var stopwatch = Stopwatch.StartNew();
+
+            ApplyHarmonyPatches();
             Config.Load();
             OptionsPanelHandler.RegisterModOptions(new Options());
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
+        }
+
+        public static void ApplyHarmonyPatches()
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            var harmony = new Harmony("com.tobeyblaber.straitjacket.subnautica.autoload.mod");
+            harmony.PatchAll(typeof(PlayerPatch));
+            harmony.PatchAll(typeof(SaveLoadManagerPatch));
+            harmony.PatchAll(typeof(StartScreenPatch));
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Harmony patches applied in {stopwatch.ElapsedMilliseconds}ms.");
         }
     }
 }
