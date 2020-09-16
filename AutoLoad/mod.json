@@ -2,13 +2,13 @@
     "Id": "Straitjacket.Subnautica.Mods.AutoLoad",
     "DisplayName": "AutoLoad",
     "Author": "Tobey Blaber",
-    "Version": "1.2.2",
+    "Version": "1.2.3",
     "AssemblyName": "Straitjacket.Subnautica.Mods.AutoLoad.dll",
     "Enable": true,
     "Game": "Subnautica",
     "LoadAfter": [ "SMLHelper" ],
     "VersionDependencies": {
-        "SMLHelper": "2.8"
+        "SMLHelper": "2.9"
     },
     "VersionChecker": {
         "LatestVersionURL": "https://github.com/tobeyStraitjacket/Straitjacket.Subnautica.Mods.AutoLoad/raw/master/AutoLoad/mod.json"

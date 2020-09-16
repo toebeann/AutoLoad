@@ -1,11 +1,12 @@
 ﻿using HarmonyLib;
 
-namespace Straitjacket.Subnautica.Mods.AutoLoad.Patch
+namespace Straitjacket.Subnautica.Mods.AutoLoad.Patches
 {
-    [HarmonyPatch(typeof(Player), nameof(Player.Awake))]
-    internal static class Player_Awake
+    internal static class PlayerPatch
     {
-        static void Prefix()
+        [HarmonyPatch(typeof(Player), nameof(Player.Awake))]
+        [HarmonyPrefix]
+        static void AwakePrefix()
         {
             var slot = SaveLoadManager.main.GetCurrentSlot();
             var gameInfo = SaveLoadManager.main.GetGameInfo(slot);
@@ -29,7 +30,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad.Patch
             }
         }
 
-        static void Postfix()
+        [HarmonyPatch(typeof(Player), nameof(Player.Awake))]
+        [HarmonyPostfix]
+        static void AwakePostfix()
         {
             AutoLoad.RunCoroutine(AutoLoad.PauseOnLoad());
         }

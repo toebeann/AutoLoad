@@ -1,14 +1,18 @@
-﻿using System;
+﻿using HarmonyLib;
+using Oculus.Newtonsoft.Json;
+using Oculus.Newtonsoft.Json.Converters;
+using QModManager.API;
+using SMLHelper.V2.Handlers;
+using SMLHelper.V2.Utility;
+using Straitjacket.Subnautica.Mods.AutoLoad.Patches;
+using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using Oculus.Newtonsoft.Json;
-using Oculus.Newtonsoft.Json.Converters;
-using SMLHelper.V2.Handlers;
-using SMLHelper.V2.Utility;
-using QModManager.API;
 using UnityEngine;
+using Logger = BepInEx.Subnautica.Logger;
 
 namespace Straitjacket.Subnautica.Mods.AutoLoad
 {
@@ -41,36 +45,30 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         public static IEnumerator OnGuiInitialized(StartScreen startScreen)
         {
             StartScreen = startScreen;
-#pragma warning disable CS0436 // Type conflicts with imported type
             if (Startup && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
-#pragma warning restore CS0436 // Type conflicts with imported type
             {
                 yield return new WaitUntil(() => modCheckComplete);
 
-#pragma warning disable CS0436 // Type conflicts with imported type
                 if (!FailedMods.Any() && !KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
-#pragma warning restore CS0436 // Type conflicts with imported type
                 {
                     yield return new WaitWhile(() => SaveLoadManager.main == null);
                     yield return SaveLoadManager.main.LoadSlotsAsync();
 
                     string[] activeSlotNames = SaveLoadManager.main.GetActiveSlotNames();
-#pragma warning disable CS0436 // Type conflicts with imported type
                     if (KeyCodeUtils.GetKeyHeld(Config.OverrideKey) || VirtualKey.GetKey(Config.OverrideKey))
-#pragma warning restore CS0436 // Type conflicts with imported type
                     {
                         yield return RunCoroutine(startScreen.Load());
                     }
                     else if (!activeSlotNames.Any())
                     {
-                        Console.WriteLine("[AutoLoad] No active save slots found, initialising StartScreen GUI.");
+                        Logger.LogInfo("No active save slots found, initialising StartScreen GUI.");
                         yield return RunCoroutine(startScreen.Load());
                     }
                     else if (!string.IsNullOrEmpty(Config.SpecificSaveSlot))
                     {
                         if ((activeSlotNames as IEnumerable<string>).Contains(Config.SpecificSaveSlot))
                         {
-                            Console.WriteLine($"[AutoLoad] Beginning load of specific save [{Config.SpecificSaveSlot}]...");
+                            Logger.LogInfo($"Beginning load of specific save [{Config.SpecificSaveSlot}]...");
                             if (!LoadSpecificSaveGame(Config.SpecificSaveSlot))
                             {
                                 yield return RunCoroutine(startScreen.Load());
@@ -78,21 +76,20 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                         }
                         else
                         {
-                            Console.WriteLine($"[AutoLoad] Specific save [{Config.SpecificSaveSlot}] not found, " +
+                            Logger.LogWarning($"Specific save [{Config.SpecificSaveSlot}] not found, " +
                                 $"initialising StartScreen GUI.");
                             yield return RunCoroutine(startScreen.Load());
                         }
                     }
                     else
                     {
-#pragma warning disable CS0436 // Type conflicts with imported type
                         var toggleAutoLoadMode = KeyCodeUtils.GetKeyHeld(Config.ToggleAutoLoadModeKey) ||
                             VirtualKey.GetKey(Config.ToggleAutoLoadModeKey);
-#pragma warning restore CS0436 // Type conflicts with imported type
+
                         if ((!toggleAutoLoadMode && Config.AutoLoadMode == AutoLoadMode.MostRecentlySaved)
                             || (toggleAutoLoadMode && Config.AutoLoadMode == AutoLoadMode.MostRecentlyLoaded))
                         {
-                            Console.WriteLine("[AutoLoad] Beginning load of most recent save...");
+                            Logger.LogInfo("Beginning load of most recent save...");
                             if (!LoadMostRecentSavedGame(activeSlotNames))
                             {
                                 yield return RunCoroutine(startScreen.Load());
@@ -100,39 +97,37 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                         }
                         else if (MostRecentlyLoadedSlot != null)
                         {
-                            Console.WriteLine("[AutoLoad] Beginning load of most recently loaded game...");
+                            Logger.LogInfo("Beginning load of most recently loaded game...");
                             if (!LoadMostRecentLoadedGame())
                             {
                                 if (Config.StartNewGame)
                                 {
-                                    Console.WriteLine($"[AutoLoad] Starting new game in {MostRecentlyLoadedSlot.GameMode} mode...");
+                                    Logger.LogInfo($"Starting new game in {MostRecentlyLoadedSlot.GameMode} mode...");
                                     yield return RunCoroutine(StartNewGame(MostRecentlyLoadedSlot.GameMode));
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[AutoLoad] Initialising StartScreen GUI.");
+                                    Logger.LogInfo("Initialising StartScreen GUI.");
                                     yield return RunCoroutine(startScreen.Load());
                                 }
                             }
                         }
                         else
                         {
-                            Console.WriteLine("[AutoLoad] Information about most recently loaded save not available, " +
+                            Logger.LogInfo("Information about most recently loaded save not available, " +
                                 "initialising StartScreen GUI.");
                             yield return RunCoroutine(startScreen.Load());
                         }
                     }
                 }
-#pragma warning disable CS0436 // Type conflicts with imported type
                 else if (!KeyCodeUtils.GetKeyHeld(Config.OverrideKey) && !VirtualKey.GetKey(Config.OverrideKey))
-#pragma warning restore CS0436 // Type conflicts with imported type
                 {
-                    Console.WriteLine("[AutoLoad] Detected the following mods were not loaded:");
+                    Logger.LogWarning("Detected the following mods were not loaded:");
                     foreach (var mod in FailedMods)
                     {
-                        Console.WriteLine($"[AutoLoad]     {mod.DisplayName}");
+                        Logger.LogMessage($"    {mod.DisplayName}");
                     }
-                    Console.WriteLine("[AutoLoad] Skipping AutoLoad.");
+                    Logger.LogWarning("Skipping AutoLoad.");
                     yield return RunCoroutine(startScreen.Load());
                 }
                 else
@@ -147,7 +142,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             Startup = false;
         }
 
+#pragma warning disable CS0618 // Type or member is obsolete
         public static IEnumerator StartNewGame(GameMode gameMode)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             if (isStartingNewGame)
             {
@@ -198,7 +195,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                 yield return clearSlotTask;
                 if (!clearSlotTask.GetSuccessful())
                 {
-                    Debug.LogError("Clearing save data failed. But we ignore it.");
+                    Logger.LogError("Clearing save data failed. But we ignore it.");
                 }
                 clearSlotTask = null;
             }
@@ -242,7 +239,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
         /// </summary>
         public static bool LoadSpecificSaveGame(string saveGame, string sessionId = null)
         {
-            Console.WriteLine($"[AutoLoad] Attempting to load save slot {saveGame}...");
+            Logger.LogInfo($"Attempting to load save slot {saveGame}...");
             var gameInfo = SaveLoadManager.main.GetGameInfo(saveGame);
             if (gameInfo != null && SlotIsValid(saveGame, sessionId))
             {
@@ -251,7 +248,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             }
             else
             {
-                Console.WriteLine($"[AutoLoad] Specified save slot does not exist or is not valid.");
+                Logger.LogError("Specified save slot does not exist or is not valid.");
                 return false;
             }
         }
@@ -266,10 +263,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
             if (!initTask.GetSuccessful())
             {
-                Console.WriteLine("[AutoLoad] Save data init failed ({0})", new object[]
-                {
-                    initTask.result
-                });
+                Logger.LogError($"Save data init failed ({initTask.result})");
                 yield return RunCoroutine(StartScreen.Load());
                 yield break;
             }
@@ -279,8 +273,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
 
             if (!loadOptionsTask.GetResult())
             {
-                string descriptionText = Language.main.Get("LoadOptionsFailed");
-                Console.WriteLine("[AutoLoad] " + descriptionText);
+                Logger.LogError(Language.main.Get("LoadOptionsFailed"));
                 yield return RunCoroutine(StartScreen.Load());
                 yield break;
             }
@@ -338,7 +331,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             {
                 FPSInputModule.SelectGroup(null, false);
                 uGUI.main.loading.BeginAsyncSceneLoad("Main");
-                Console.WriteLine("[AutoLoad] Loading complete.");
+                Logger.LogInfo("Loading complete.");
             }
             isStartingNewGame = false;
             yield break;
@@ -375,7 +368,7 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                         var result = gameInfo.session == sessionId;
                         if (!result)
                         {
-                            Console.WriteLine("[AutoLoad] Session ID mismatch.");
+                            Logger.LogError("Session ID mismatch.");
                         }
                         return result;
                     }
@@ -398,7 +391,9 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
                     yield return new WaitUntil(() => IngameMenu.main != null);
                     yield return new WaitUntil(() => Time.timeSinceLevelLoad >= 1f);
 
+#pragma warning disable CS0618 // Type or member is obsolete
                     if (Utils.GetLegacyGameMode() != GameMode.Hardcore)
+#pragma warning restore CS0618 // Type or member is obsolete
                     {
                         IngameMenu.main.Open();
                     }
@@ -434,11 +429,30 @@ namespace Straitjacket.Subnautica.Mods.AutoLoad
             }
             set => PlayerPrefs.SetString("MostRecentlyLoadedSaveSlot", JsonConvert.SerializeObject(value, new JsonConverter[] { new StringEnumConverter() }));
         }
-        public static Config Config = new Config();
+
+        public static Config Config = OptionsPanelHandler.Main.RegisterModOptions<Config>();
         public static void Initialise()
         {
-            Config.Load();
-            OptionsPanelHandler.RegisterModOptions(new Options());
+            Logger.LogInfo("Initialising...");
+            var stopwatch = Stopwatch.StartNew();
+
+            ApplyHarmonyPatches();
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Initialised in {stopwatch.ElapsedMilliseconds}ms.");
+        }
+
+        public static void ApplyHarmonyPatches()
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            var harmony = new Harmony("com.tobeyblaber.straitjacket.subnautica.autoload.mod");
+            harmony.PatchAll(typeof(PlayerPatch));
+            harmony.PatchAll(typeof(SaveLoadManagerPatch));
+            harmony.PatchAll(typeof(StartScreenPatch));
+
+            stopwatch.Stop();
+            Logger.LogInfo($"Harmony patches applied in {stopwatch.ElapsedMilliseconds}ms.");
         }
     }
 }
