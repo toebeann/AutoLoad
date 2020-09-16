@@ -8,7 +8,7 @@
     "Game": "Subnautica",
     "LoadAfter": [ "SMLHelper" ],
     "VersionDependencies": {
-        "SMLHelper": "2.8"
+        "SMLHelper": "2.9"
     },
     "VersionChecker": {
         "LatestVersionURL": "https://github.com/tobeyStraitjacket/Straitjacket.Subnautica.Mods.AutoLoad/raw/master/AutoLoad/mod.json"
