@@ -82,7 +82,6 @@
     <Compile Include="AutoLoad.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Main.cs" />
-    <Compile Include="Options.cs" />
     <Compile Include="Patches\PlayerPatch.cs" />
     <Compile Include="Patches\SaveLoadManagerPatch.cs" />
     <Compile Include="Patches\StartScreenPatch.cs" />
